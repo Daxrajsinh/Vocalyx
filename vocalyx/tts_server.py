@@ -41,8 +41,10 @@ class AudioWebSocketServer:
 
                 if data.get("type") == "generate_speech":
                     prompt = data.get("prompt", "")
+                    system_prompt = data.get("system_prompt", "You are a motivational assistant.")
+                    model = data.get("model", "gpt-3.5-turbo")
                     print(info(f"Generating speech: {prompt[:50]}..."))
-                    await self.stream_gpt_with_tts(websocket, prompt)
+                    await self.stream_gpt_with_tts(websocket, prompt, system_prompt=system_prompt, model=model)
 
         except websockets.exceptions.ConnectionClosed:
             print(info("Client disconnected."))
@@ -53,7 +55,7 @@ class AudioWebSocketServer:
                 "message": str(e)
             }))
 
-    async def stream_gpt_with_tts(self, websocket, prompt):
+    async def stream_gpt_with_tts(self, websocket, prompt, system_prompt="You are a motivational assistant.", model="gpt-3.5-turbo"):
         try:
             await websocket.send(json.dumps({
                 "type": "generation_started"
@@ -62,9 +64,9 @@ class AudioWebSocketServer:
             text_buffer = ""
 
             with client.responses.stream(
-                model="gpt-3.5-turbo",
+                model=model,
                 input=[
-                    {"role": "system", "content": "You are a motivational assistant."},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,

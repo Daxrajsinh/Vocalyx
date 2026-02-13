@@ -60,7 +60,7 @@ class TTSClient:
             print(error(f"Error: {e}"))
             self.is_connected = False
         
-    async def send_request(self, prompt, voice="af_heart", speed=1.0):
+    async def send_request(self, prompt, voice="af_heart", speed=1.0, system_prompt=None, model=None):
         """Send a TTS generation request"""
         if not self.is_connected:
             await self.connect()
@@ -73,6 +73,10 @@ class TTSClient:
             "voice": voice,
             "speed": speed
         }
+        if system_prompt is not None:
+            request["system_prompt"] = system_prompt
+        if model is not None:
+            request["model"] = model
         await self.websocket.send(json.dumps(request))
         return True
         
@@ -133,9 +137,9 @@ class TTSClient:
             stream.stop_stream()
             stream.close()
 
-    async def generate_speech(self, prompt, voice="af_heart", speed=1.0):
+    async def generate_speech(self, prompt, voice="af_heart", speed=1.0, system_prompt=None, model=None):
         """Main method to generate and play speech"""
-        if not await self.send_request(prompt, voice, speed):
+        if not await self.send_request(prompt, voice, speed, system_prompt, model):
             return False
             
         # Start receiving messages and playing audio concurrently
@@ -152,7 +156,7 @@ class TTSClient:
         """Cleanup"""
         self.p.terminate()
 
-async def process_user_input(text, tts_client, voice="af_heart", speed=1.0):
+async def process_user_input(text, tts_client, voice="af_heart", speed=1.0, system_prompt=None, model=None):
     """Process user input and generate TTS response"""
     if not text.strip():
         return
@@ -160,7 +164,7 @@ async def process_user_input(text, tts_client, voice="af_heart", speed=1.0):
     print(f"\n{success('Sending to AI: ' + text)}")
     
     # Send to TTS server
-    await tts_client.generate_speech(text, voice, speed)
+    await tts_client.generate_speech(text, voice, speed, system_prompt, model)
 
 def main():
     global prev_text, post_speech_silence_duration, unknown_sentence_detection_pause
@@ -204,6 +208,11 @@ def main():
                         help="TTS voice to use (default: af_heart)")
     parser.add_argument("--speed", type=float, default=1.0,
                         help="TTS speech speed (default: 1.0)")
+    parser.add_argument("--system-prompt", "--prompt", dest="system_prompt", type=str,
+                        default="You are a motivational assistant.",
+                        help="System prompt for the LLM (default: You are a motivational assistant.)")
+    parser.add_argument("--model", type=str, default="gpt-3.5-turbo",
+                        help="OpenAI model for LLM (e.g. gpt-3.5-turbo, gpt-4, gpt-4o) (default: gpt-3.5-turbo)")
     parser.add_argument("--post-silence", type=float, default=1.0,
                       help="Post speech silence duration in seconds (default: 1.0)")
     parser.add_argument("--unknown-pause", type=float, default=1.3,
@@ -411,7 +420,11 @@ def main():
                         print(success(f'You: {text}'))
                     
                     # Process the transcribed text with TTS
-                    await process_user_input(text, tts_client, args.voice, args.speed)
+                    await process_user_input(
+                        text, tts_client,
+                        voice=args.voice, speed=args.speed,
+                        system_prompt=args.system_prompt, model=args.model
+                    )
                     
                     if not args.continous:
                         break

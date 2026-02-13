@@ -69,7 +69,7 @@ Create a `.env` in the directory from which you run the processes (or set the va
 ### TTS server (`vocalyx-tts`)
 
 - **Host / port:** `localhost:8013` (hardcoded in code).
-- **GPT:** System prompt is a fixed “motivational assistant”; model `gpt-3.5-turbo`, temperature `0.7`.
+- **GPT:** System prompt and model are sent by the client per request (default prompt “motivational assistant”.", default model: `gpt-3.5-turbo`). Temperature is `0.7`.
 - **Soprano:** Loaded once at startup; `backend="auto"`, `device="auto"`, `cache_size_mb=100`, `decoder_batch_size=1`.
 
 ### STT server (`vocalyx-stt`)
@@ -100,6 +100,8 @@ Key options (run `vocalyx-stt --help` for full list):
 | `--tts-url` | `ws://localhost:8013` | TTS WebSocket URL. |
 | `--voice` | `af_heart` | Voice name (Soprano may ignore). |
 | `--speed` | 1.0 | Playback speed. |
+| `--system-prompt`, `--prompt` | `You are a motivational assistant.` | LLM system prompt (persona/instructions). |
+| `--model` | `gpt-3.5-turbo` | OpenAI model (e.g. `gpt-4`, `gpt-4o`). |
 | `-L`, `--list` | - | List audio devices and exit. |
 | `-c`, `--continous` | true | Keep running and transcribing. |
 
